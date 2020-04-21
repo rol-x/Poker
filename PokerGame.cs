@@ -18,23 +18,42 @@ namespace Sandbox
         public PokerGame()
         {
             isGameRunning = true;
-            players = new List<Player>(){ new Player("Edwin"), new Player("Marie"), new Player("Stephanie")};
+            players = new List<Player>() { new Player("Edwin"), new Player("Marie"), new Player("Stella") };
             dealer = new Dealer();
         }
 
         // Setting the game up; main control loop.
         public void Play()
         {
-            introduceThePlayer();
-            shufflePlayersOrder();
             moneyPool = 0;
             currentBid = 0;
+
+            introduceThePlayer();
+            shufflePlayersOrder();
+            foreach (var player in players)
+                player.Play();
+
             while (isGameRunning)
             {
                 Console.Clear();
-                displayPlayersHands();
+                displayTable();
                 foreach (var player in players)
-                    makeMove(player);
+                    if (player.IsPlaying())
+                        makeMove(player);
+                // Only up to 5 cards.
+                dealer.DealCard(players);
+            }
+        }
+
+        // Displays all players' hands, ranks and money; current bid and money pool.
+        private void displayTable()
+        {
+            Console.WriteLine($"Money pool: {moneyPool}\t\tCurrent bid: {currentBid}\n\n");
+            foreach (var player in players)
+            {
+                player.UpdateRanks();
+                player.DisplayHand();
+                player.DisplayRanks();
             }
         }
 
@@ -44,7 +63,7 @@ namespace Sandbox
             Console.WriteLine("Welcome to the table! What is your name?");
             string playerName = Console.ReadLine();
             var player = new Player(playerName);
-            player.SetPlayable();
+            player.SetUser();
             players.Add(player);
             Console.WriteLine();
         }
@@ -62,55 +81,71 @@ namespace Sandbox
             players = playersShuffled;
         }
 
-        // Output to the console card and ranks in each player's hand.
-        private void displayPlayersHands()
-        {
-            foreach (var player in players)
-            {
-                player.UpdateRanks();
-                player.DisplayHand();
-                player.DisplayRanks();
-            }
-        }
-
         // Choose the appropriate action for current state of the game.
         private void makeMove(Player player)
         {
-            // Bet - raise current bid from to some amount
-            if (currentBid == 0)
+            // The player sees their options, in order to make a choice.
+            if (player.IsUser())
             {
-                Console.WriteLine("[B] Bet\n[C] Check\n[F] Fold\n");
-                switch (Console.ReadKey().Key)
+                // No one raised the bid.
+                if (currentBid == 0)
                 {
-                    case ConsoleKey.B:
-                        currentBid = player.PlaceBid(currentBid, false);
-                        moneyPool += currentBid;
-                        break;
-                    case ConsoleKey.C:
-                        Console.WriteLine($"{player.Name} checks.");
-                        break;
-                    case ConsoleKey.F:
-                        player.Fold();
-                        break;
+                    Console.WriteLine("[B] Bet\n[C] Check\n[F] Fold\n");
+                    switch (Console.ReadKey(true).Key)
+                    {
+                        case ConsoleKey.B:
+                            currentBid = player.PlaceBid(currentBid, false);
+                            moneyPool += currentBid;
+                            break;
+                        case ConsoleKey.C:
+                            Console.WriteLine($"{player.Name} checks.");
+                            break;
+                        case ConsoleKey.F:
+                            player.Fold();
+                            break;
+                    }
+                }
+                // The bid is already raised.
+                else
+                {
+                    Console.WriteLine("[C] Call\n[R] Raise\n[F] Fold\n");
+                    switch (Console.ReadKey(true).Key)
+                    {
+                        case ConsoleKey.C:
+                            currentBid = player.PlaceBid(currentBid, true);
+                            moneyPool += currentBid;
+                            break;
+                        case ConsoleKey.R:
+                            currentBid = player.PlaceBid(currentBid, false);
+                            moneyPool += currentBid;
+                            break;
+                        case ConsoleKey.F:
+                            player.Fold();
+                            break;
+                    }
                 }
             }
+            // Non-playable player takes a turn.
             else
             {
-                Console.WriteLine("[C] Call\n[R] Raise\n[F] Fold\n");
-                switch (Console.ReadKey().Key)
+                // Player has only high card; 20% fold chance.
+                if (player.GetRanks().ContainsKey(Rank.HighCard))
                 {
-                    case ConsoleKey.C:
-                        currentBid = player.PlaceBid(currentBid, true);
-                        moneyPool += currentBid;
-                        break;
-                    case ConsoleKey.R:
-                        currentBid = player.PlaceBid(currentBid, false);
-                        break;
-                    case ConsoleKey.F:
+                    if (new Random().NextDouble() > 0.80)
                         player.Fold();
-                        break;
+                    else
+                        currentBid = player.PlaceBid(currentBid, false);
+                }
+                // Otherwise, player has 5% fold chance.
+                else
+                {
+                    if (new Random().NextDouble() > 0.95)
+                        player.Fold();
+                    else
+                        currentBid = player.PlaceBid(currentBid, false);
                 }
             }
+            Console.ReadKey(true);
         }
     }
 }

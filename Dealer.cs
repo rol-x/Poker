@@ -17,7 +17,8 @@ namespace Sandbox
         public void DealCard(List<Player> players)
         {
             foreach (var player in players)
-                player.DrawCard(deck.GetNextCard());
+                if (player.IsPlaying())
+                    player.DrawCard(deck.GetNextCard());
         }
         public void GetNewDeck()
         {

@@ -23,28 +23,34 @@ namespace Sandbox
     {
         private Dictionary<Rank, List<Card>> ranks;
         private List<Card> hand;
-        private bool isPlayable;
+        private int money;
+        private bool isUser;
         private bool isPlaying;
         private double aggressiveness;
 
-        public int Money { get; set; }
         public string Name { get; }
 
         // Constructor.
         public Player(String name)
         {
             Name = name;
-            Money = 10000;
+            money = 10000;
             hand = new List<Card>();
             aggressiveness = 0.5 + 0.2 * (new Random().NextDouble() - 0.5);
             ranks = new Dictionary<Rank, List<Card>>();
-            isPlayable = false;
+            isUser = false;
         }
 
         // Make this player the user.
-        public void SetPlayable()
+        public void SetUser()
         {
-            isPlayable = true;
+            isUser = true;
+        }
+
+        // Returns if the player is the user.
+        public bool IsUser()
+        {
+            return isUser;
         }
 
         // Add a single card to the hand.
@@ -57,40 +63,52 @@ namespace Sandbox
         public int PlaceBid(int currentBid, bool doesCall)
         {
             int bidSize;
-            if (isPlayable)
+            if (isUser)
             {
                 if (doesCall)
                     bidSize = currentBid;
                 else
                 {
+                    // First bet should be at least 100.
+                    int lowerBound = Math.Max(currentBid, 100);
                     Console.WriteLine("How much money do you want to bet? ");
                     do
                     {
-                        bidSize = Console.Read();
-                        if (bidSize > Money)
+                        bidSize = Int32.Parse(Console.ReadLine());
+                        if (bidSize > money)
                             Console.WriteLine("You lack funds to bid so high!");
-                        if (bidSize < currentBid)
-                            Console.WriteLine($"You have to bid at least {currentBid}.");
-                    } while (bidSize > Money || bidSize < currentBid);
+                        if (bidSize < lowerBound)
+                            Console.WriteLine($"You have to bid at least {lowerBound}.");
+                    } while (bidSize > money || bidSize < lowerBound);
                 }
             }
             else
             {
-                // Non-playable character bid size.
+                // Non-playable character bidding logic.
                 // First bet probability: fixed 30%.
-                // First bet size: any number from 0 to 50, times 10. Number (10/3) is normalizing [0, 0.3) interval into [0, 1).
+                // First bet size: any number from 0 to 50, times 10.
                 // Minimal bid: current bid
                 // Maximal bid: current bid * (aggressiveness + 1)
                 // Minimal bid probability: 1 - aggressiveness
                 // Aggressiveness: 0 - always calls, 0.5 - calls and raises equally, 1 - only raises. Linear.
+                //
+                // Number(10 / 3) is normalizing[0, 0.3) interval into[0, 1).
 
                 if (currentBid == 0)
                     currentBid = 10 * (int)(50 * (10/3) * Math.Max(0, new Random().NextDouble() - 0.7));
 
                 bidSize = (int)Math.Max(currentBid, currentBid * (aggressiveness + new Random().NextDouble()));
             }
-            Money -= bidSize;
-            Console.WriteLine($"{Name} bids {bidSize}");
+
+            money -= bidSize;
+
+            if (doesCall)
+                Console.WriteLine($"{Name} calls with {currentBid}");
+            else if (bidSize == 0)
+                Console.WriteLine($"{Name} checks.");
+            else
+                Console.WriteLine($"{Name} bets {bidSize}.");
+
             return bidSize;
         }
 
@@ -132,6 +150,7 @@ namespace Sandbox
         // Search cards in hand for ranks, like pair, three of a kind or flush.
         public void UpdateRanks()
         {
+            ranks.Clear();
             SortHand();
             var colorDictionary = new Dictionary<Color, int>();
             var valueDictionary = new Dictionary<Value, int>();
@@ -191,7 +210,7 @@ namespace Sandbox
             for (int i = 0; i < hand.Count - 1; i++)
                 if (hand[i].Value + 1 != hand[i + 1].Value)
                     areCardsConsecutive = false;
-            if (areCardsConsecutive)
+            if (areCardsConsecutive && hand.Count == 5)
                 ranks.Add(Rank.Straight, hand);
             // Straight flush is a straight and a flush.
             if (ranks.ContainsKey(Rank.Straight) && ranks.ContainsKey(Rank.Flush))
@@ -201,7 +220,7 @@ namespace Sandbox
                 ranks.Remove(Rank.Flush);
             }
             // High card is the card of highest value in case of no other ranks.
-            if (ranks.Count == 0)
+            if (ranks.Count == 0 && hand.Count != 0)
                 ranks.Add(Rank.HighCard, hand.GetRange(hand.Count - 1, 1));
         }
 
@@ -214,7 +233,10 @@ namespace Sandbox
         // Displays all cards in the player's hand, as card symbols.
         public void DisplayHand()
         {
-            Console.WriteLine($"{Name}'s hand");
+            if (isPlaying)
+                Console.WriteLine($"{Name}\t\tCash: {money}");
+            else
+                Console.WriteLine($"{Name} (fold)\tCash: {money}");
             foreach (var card in hand)
                 Console.Write(card.CardSymbol() + " ");
             Console.WriteLine();
