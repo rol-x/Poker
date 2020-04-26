@@ -94,7 +94,9 @@ namespace Sandbox
                             Console.WriteLine("You lack funds to bid so high!");
                         if (bidSize < lowerBound)
                             Console.WriteLine($"You have to bid at least ${lowerBound}.");
-                    } while (bidSize > money || bidSize < lowerBound);
+                        if (bidSize % 10 != 0)
+                            Console.WriteLine("The minimal bidding step is $10.");
+                    } while (bidSize > money || bidSize < lowerBound || bidSize % 10 != 0);
                 }
             }
             else
@@ -112,7 +114,7 @@ namespace Sandbox
                 if (currentBid == 0)
                     currentBid = 10 * (int)(50 * (10 / 3) * Math.Max(0, new Random().NextDouble() - 0.7));
 
-                bidSize = (int)Math.Max(currentBid, currentBid * (Aggressiveness + new Random().NextDouble()));
+                bidSize = 10*(int)(Math.Max(currentBid, currentBid * (Aggressiveness + new Random().NextDouble())) / 10);
             }
 
             money -= bidSize;
@@ -323,6 +325,5 @@ namespace Sandbox
                 Console.WriteLine();
             Console.WriteLine();
         }
-
     }
 }
