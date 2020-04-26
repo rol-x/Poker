@@ -36,7 +36,7 @@ namespace Sandbox
             introduceThePlayer();
             shufflePlayersOrder();
         }
-        
+
         /// <summary> 
         /// Main rounds control loop.
         /// </summary>
@@ -115,7 +115,7 @@ namespace Sandbox
         /// </summary>
         private void displayTable()
         {
-            Console.WriteLine($"Money pool: {moneyPool}\t\tCurrent bid: {currentBid}\n\n");
+            Console.WriteLine($"Money pool: ${moneyPool}\t\tCurrent bid: ${currentBid}\n\n");
             foreach (var player in players)
             {
                 player.UpdateRanks();
@@ -173,24 +173,79 @@ namespace Sandbox
             // Non-playable player takes a turn.
             else
             {
-                // Player has only high card; 20% fold chance.
-                if (player.GetRanks().ContainsKey(Rank.HighCard))
-                {
-                    if (new Random().NextDouble() > 0.80)
-                        player.Fold();
-                    else
-                        currentBid = player.PlaceBid(currentBid, false);
-                }
-                // Otherwise, player has 5% fold chance.
+                var handValue = getHandValue(player);
+                if (handValue == 0)
+                    currentBid = player.PlaceBid(currentBid, false);
                 else
                 {
-                    if (new Random().NextDouble() > 0.95)
+                    #region formulaCommentary
+
+                    // The following formula maps [32, 568243] hand-value interval into probability space logarithmically.
+                    // Probability of folding for scores S(k) correspoding to the highest card h are shown below.
+                    //
+                    // h    S(h)        P(Fold)
+                    // 2    32          81.4%
+                    // 3    243         40.6%
+                    // 4    1024        21.9%
+                    // 5    3125        12.2%
+                    // 6    7776        6.9%
+                    // 7    16807       3.8%
+                    // 8    32768       2%
+                    // 9    59049       1%
+                    // 10   100000      0.5%
+                    // J    161051      0.2%
+                    // Q    248832      0.05%
+                    // K    371293    < 0.01%
+                    // A    537824    < 0.0001%
+                    // max  568243      0%
+
+                    // The probability of folding with 2 as a high card, depending on aggressiveness:
+                    // agg.     P(Fold | 2) 
+                    // 0.0	    100%
+                    // 0.1      97.3%
+                    // 0.2      94.1%
+                    // 0.3      90.5%
+                    // 0.4      86.3%
+                    // 0.5      81.4%
+                    // 0.6      75.8%
+                    // 0.7      69.0%
+                    // 0.8      60.5%
+                    // 0.9      48.8%
+                    // 1.0      12.2%
+
+                    #endregion
+                    double foldProbability = Math.Pow(Math.Log(568243 / handValue, 568243 / (32 - 31.99 * player.Aggressiveness)), (2.5 + player.Aggressiveness));
+                    if (new Random().NextDouble() < foldProbability)
                         player.Fold();
                     else
-                        currentBid = player.PlaceBid(currentBid, false);
+                        player.PlaceBid(currentBid, false);
                 }
             }
             Console.ReadKey(true);
+        }
+
+        /// <summary>
+        /// Calculate hand value based on single card values, when no rank is present.
+        /// </summary>
+        /// <returns>Returns an integer from 32 to 568243, and 0.</returns>
+        private int getHandValue(Player player)
+        {
+            // Sorted hand can be treated as number in base-14 system.
+            // Examples:
+            // 6 K A    = 6^3 + 13^4 + 14^5
+            // 8 9 10   = 8^3 + 9^4 + 10^5
+            // 2 9 J    = 2^3 + 9^4 + 11^5
+            // 4 5 A    = 4^3 + 5^4 + 14^5
+            // K A      = 13^4 + 14^5
+            // 9 Q      = 9^4 + 12^5
+            // 5 7      = 5^4 + 7^5
+            // A        = 14^5
+
+            double value = 0;
+            if (player.GetRanks().ContainsKey(Rank.HighCard))
+                for (int i = player.GetHand().Count - 1; i >= 0; i--)
+                    value += Math.Pow((int)player.GetHand()[i].Value, i + 1);
+            return (int)value;
         }
 
         /// <summary>

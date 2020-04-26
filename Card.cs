@@ -18,7 +18,6 @@ namespace Sandbox
     /// </summary>
     enum Value
     {
-        Ace,
         Two,
         Three,
         Four,
@@ -30,7 +29,8 @@ namespace Sandbox
         Ten,
         Jack,
         Queen,
-        King
+        King,
+        Ace
     }
 
     class Card
@@ -39,10 +39,10 @@ namespace Sandbox
         public Value Value { get; }
 
         /// <summary>
-        /// Constructor from numerical values (1 to 4) and (1 to 13).
+        /// Constructor from numerical values (1 to 4) and (2 to 14).
         /// </summary>
         /// <param name="color">Spades, clubs, hearts and diamonds from 1 to 4.</param>
-        /// <param name="value">From ace, two, three... (1, 2, 3...) until Jack, Queen, King (11, 12, 13).</param>
+        /// <param name="value">From two, three, four... (2, 3, 4...) until Jack, Queen, King, Ace (11, 12, 13, 14).</param>
         public Card(short color, short value)
         {
             switch (color)
@@ -63,9 +63,6 @@ namespace Sandbox
 
             switch (value)
             {
-                case 1:
-                    Value = Value.Ace;
-                    break;
                 case 2:
                     Value = Value.Two;
                     break;
@@ -101,6 +98,9 @@ namespace Sandbox
                     break;
                 case 13:
                     Value = Value.King;
+                    break;
+                case 14:
+                    Value = Value.Ace;
                     break;
             }
         }

@@ -30,7 +30,7 @@ namespace Sandbox
         private int money;
         private bool isUser;
         private bool isPlaying;
-        private double aggressiveness;
+        public double Aggressiveness { get; }
 
         public string Name { get; }
 
@@ -42,11 +42,11 @@ namespace Sandbox
             Name = name;
             money = 10000;
             hand = new List<Card>();
-            aggressiveness = 0.5 + 0.2 * (new Random().NextDouble() - 0.5);
+            Aggressiveness = 0.5 + 0.4 * (new Random().NextDouble() - 0.5);
             ranks = new Dictionary<Rank, List<Card>>();
             isUser = false;
         }
-        
+
         /// <summary>
         /// Make this player the user. 
         /// </summary>
@@ -93,7 +93,7 @@ namespace Sandbox
                         if (bidSize > money)
                             Console.WriteLine("You lack funds to bid so high!");
                         if (bidSize < lowerBound)
-                            Console.WriteLine($"You have to bid at least {lowerBound}.");
+                            Console.WriteLine($"You have to bid at least ${lowerBound}.");
                     } while (bidSize > money || bidSize < lowerBound);
                 }
             }
@@ -101,7 +101,7 @@ namespace Sandbox
             {
                 // Non-playable character bidding logic.
                 // First bet probability: fixed 30%.
-                // First bet size: any number from 0 to 50, times 10.
+                // First bet size: any integer from 0 to 50, times 10.
                 // Minimal bid: current bid
                 // Maximal bid: current bid * (aggressiveness + 1)
                 // Minimal bid probability: 1 - aggressiveness
@@ -112,17 +112,17 @@ namespace Sandbox
                 if (currentBid == 0)
                     currentBid = 10 * (int)(50 * (10 / 3) * Math.Max(0, new Random().NextDouble() - 0.7));
 
-                bidSize = (int)Math.Max(currentBid, currentBid * (aggressiveness + new Random().NextDouble()));
+                bidSize = (int)Math.Max(currentBid, currentBid * (Aggressiveness + new Random().NextDouble()));
             }
 
             money -= bidSize;
 
             if (doesCall)
-                Console.WriteLine($"{Name} calls with {currentBid}");
+                Console.WriteLine($"{Name} calls with ${currentBid}.");
             else if (bidSize == 0)
                 Console.WriteLine($"{Name} checks.");
             else
-                Console.WriteLine($"{Name} bets {bidSize}.");
+                Console.WriteLine($"{Name} bets ${bidSize}.");
 
             return bidSize;
         }
@@ -297,11 +297,14 @@ namespace Sandbox
         public void DisplayHand()
         {
             if (isPlaying)
-                Console.WriteLine($"{Name}\t\tCash: {money}");
+                Console.WriteLine($"{Name}\t\t${money}");
             else
-                Console.WriteLine($"{Name} (fold)\tCash: {money}");
-            foreach (var card in hand)
-                Console.Write(card.CardSymbol() + " ");
+                Console.WriteLine($"{Name} (fold)\t${money}");
+            if (hand.Count == 0)
+                Console.WriteLine("No cards drawn yet.");
+            else
+                foreach (var card in hand)
+                    Console.Write(card.CardSymbol() + " ");
             Console.WriteLine();
         }
 
@@ -316,7 +319,8 @@ namespace Sandbox
                 foreach (var card in rank.Value)
                     Console.Write(card.CardSymbol() + " ");
             }
-            Console.WriteLine();
+            if (ranks.Count != 0)
+                Console.WriteLine();
             Console.WriteLine();
         }
 
