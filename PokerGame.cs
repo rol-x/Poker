@@ -6,58 +6,85 @@ using System.Threading.Tasks;
 
 namespace Sandbox
 {
+    /// <summary>
+    /// Responsible for poker rules and the flow of the game.
+    /// </summary>
     class PokerGame
     {
         private List<Player> players;
         private Dealer dealer;
-        private bool isGameRunning;
+        private bool isRoundOver;
+        private bool usedReplacement;
         private int moneyPool;
         private int currentBid;
 
-        // Constructor.
+        /// <summary> 
+        /// Constructor.
+        /// </summary>
         public PokerGame()
         {
-            isGameRunning = true;
             players = new List<Player>() { new Player("Edwin"), new Player("Marie"), new Player("Stella") };
             dealer = new Dealer();
+            isRoundOver = false;
         }
 
-        // Setting the game up; main control loop.
-        public void Play()
+        /// <summary> 
+        /// Introduce the user and shuffle the order of players at the table.
+        /// </summary>
+        public void SitPlayers()
         {
-            moneyPool = 0;
-            currentBid = 0;
-
             introduceThePlayer();
             shufflePlayersOrder();
-            foreach (var player in players)
-                player.Play();
-
-            while (isGameRunning)
+        }
+        
+        /// <summary> 
+        /// Main rounds control loop.
+        /// </summary>
+        public void Play()
+        {
+            startNewRound();
+            while (!isRoundOver)
             {
                 Console.Clear();
                 displayTable();
                 foreach (var player in players)
                     if (player.IsPlaying())
                         makeMove(player);
-                // Only up to 5 cards.
-                dealer.DealCard(players);
+                checkEndOfRound();
+
+                if (isRoundOver && !usedReplacement)
+                    foreach (var player in players)
+                    {
+                        int howManyToReplace = player.ReplaceCards();
+                        dealer.DealReplacement(player, howManyToReplace);
+                        usedReplacement = true;
+                    }
+                if (!isRoundOver)
+                    dealer.DealCard(players);
             }
+
+            determineTheWinner();
         }
 
-        // Displays all players' hands, ranks and money; current bid and money pool.
-        private void displayTable()
+        /// <summary> 
+        /// Reset game's and players' round-level stats.
+        /// </summary>
+        private void startNewRound()
         {
-            Console.WriteLine($"Money pool: {moneyPool}\t\tCurrent bid: {currentBid}\n\n");
+            moneyPool = 0;
+            currentBid = 0;
+            usedReplacement = false;
+            isRoundOver = false;
             foreach (var player in players)
             {
-                player.UpdateRanks();
-                player.DisplayHand();
-                player.DisplayRanks();
+                player.DiscardHand();
+                player.Play();
             }
         }
 
-        // Get the player's name and place them at the table.
+        /// <summary>
+        /// Get the player's name and place them at the table.
+        /// </summary>
         private void introduceThePlayer()
         {
             Console.WriteLine("Welcome to the table! What is your name?");
@@ -68,7 +95,9 @@ namespace Sandbox
             Console.WriteLine();
         }
 
-        // Randomize player's order at the table.
+        /// <summary> 
+        /// Randomize player's order at the table.
+        /// </summary>
         private void shufflePlayersOrder()
         {
             var playersShuffled = new List<Player>();
@@ -81,7 +110,23 @@ namespace Sandbox
             players = playersShuffled;
         }
 
-        // Choose the appropriate action for current state of the game.
+        /// <summary>
+        /// Display all players' hands, ranks and money; current bid and money pool.
+        /// </summary>
+        private void displayTable()
+        {
+            Console.WriteLine($"Money pool: {moneyPool}\t\tCurrent bid: {currentBid}\n\n");
+            foreach (var player in players)
+            {
+                player.UpdateRanks();
+                player.DisplayHand();
+                player.DisplayRanks();
+            }
+        }
+
+        /// <summary>
+        /// Choose the appropriate action for current state of the game.
+        /// </summary>
         private void makeMove(Player player)
         {
             // The player sees their options, in order to make a choice.
@@ -146,6 +191,25 @@ namespace Sandbox
                 }
             }
             Console.ReadKey(true);
+        }
+
+        /// <summary>
+        ///  Check whether the round should end (one player left or showdown).
+        /// </summary>
+        private void checkEndOfRound()
+        {
+            if (players.Where(player => player.IsPlaying() == true).Count() == 1)
+                isRoundOver = true;
+            if (players[0].GetHand().Count == 5 && usedReplacement == true)
+                isRoundOver = true;
+        }
+
+        /// <summary>
+        /// Perform a showdown between players' hands to determine the round winner.
+        /// </summary>
+        private void determineTheWinner()
+        {
+            // TODO
         }
     }
 }

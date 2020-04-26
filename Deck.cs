@@ -6,10 +6,16 @@ using System.Threading.Tasks;
 
 namespace Sandbox
 {
+    /// <summary>
+    /// Simulates a deck of 52 cards.
+    /// </summary>
     class Deck
     {
         private List<Card> cards;
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Deck()
         {
             cards = new List<Card>();
@@ -17,6 +23,10 @@ namespace Sandbox
                 for (short value = 1; value <= 13; value++)
                     cards.Add(new Card(color, value));
         }
+
+        /// <summary>
+        /// Reorder the cards randomly.
+        /// </summary>
         public void Shuffle()
         {
             var shuffledCards = new List<Card>();
@@ -29,6 +39,10 @@ namespace Sandbox
             }
             cards = shuffledCards;
         }
+
+        /// <summary>
+        /// Take and return the top card from the deck.
+        /// </summary>
         public Card GetNextCard()
         {
             var nextCard = cards.First();

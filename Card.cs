@@ -2,6 +2,9 @@
 
 namespace Sandbox
 {
+    /// <summary>
+    /// Card color; can be spades, clubs, hearts or diamonds.
+    /// </summary>
     enum Color
     {
         Spades,
@@ -9,6 +12,10 @@ namespace Sandbox
         Hearts,
         Diamonds
     }
+
+    /// <summary>
+    /// Card value; can be from 2 up to 10 or one of the figures: Jack, Queen, King, Ace.
+    /// </summary>
     enum Value
     {
         Ace,
@@ -31,6 +38,11 @@ namespace Sandbox
         public Color Color { get; }
         public Value Value { get; }
 
+        /// <summary>
+        /// Constructor from numerical values (1 to 4) and (1 to 13).
+        /// </summary>
+        /// <param name="color">Spades, clubs, hearts and diamonds from 1 to 4.</param>
+        /// <param name="value">From ace, two, three... (1, 2, 3...) until Jack, Queen, King (11, 12, 13).</param>
         public Card(short color, short value)
         {
             switch (color)
@@ -93,12 +105,18 @@ namespace Sandbox
             }
         }
 
+        /// <summary>
+        /// Constructor from an enumerated type.
+        /// </summary>
         public Card(Color color, Value value)
         {
             Color = color;
             Value = value;
         }
 
+        /// <summary>
+        /// Returns the symbolic UTF-8 representation of a card, e.g. 5♣.
+        /// </summary>
         public string CardSymbol()
         {
             string cardSymbol = "";

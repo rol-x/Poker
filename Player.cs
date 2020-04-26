@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sandbox
 {
+    /// <summary>
+    /// Standard poker ranking, matching cards from hand together into groups like pair, full house or straight flush.
+    /// </summary>
     enum Rank
     {
         HighCard,
@@ -19,6 +20,9 @@ namespace Sandbox
         StraightFlush
     }
 
+    /// <summary>
+    /// Represents a player at the table, controlled either by a computer or the user.
+    /// </summary>
     class Player
     {
         private Dictionary<Rank, List<Card>> ranks;
@@ -30,7 +34,9 @@ namespace Sandbox
 
         public string Name { get; }
 
-        // Constructor.
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public Player(String name)
         {
             Name = name;
@@ -40,26 +46,35 @@ namespace Sandbox
             ranks = new Dictionary<Rank, List<Card>>();
             isUser = false;
         }
-
-        // Make this player the user.
+        
+        /// <summary>
+        /// Make this player the user. 
+        /// </summary>
         public void SetUser()
         {
             isUser = true;
         }
 
-        // Returns if the player is the user.
+        /// <summary>
+        /// Returns if the player is the user. 
+        /// </summary>
         public bool IsUser()
         {
             return isUser;
         }
 
-        // Add a single card to the hand.
+        /// <summary>
+        /// Add a single card to the hand.
+        /// </summary>
         public void DrawCard(Card card)
         {
             hand.Add(card);
         }
 
-        // Player chooses the amount of money they want to bet in current round.
+        /// <summary>
+        /// Player chooses the amount of money they want to bet in current round. 
+        /// </summary>
+        /// <returns>Returns the bid value chosen by player.</returns>
         public int PlaceBid(int currentBid, bool doesCall)
         {
             int bidSize;
@@ -95,7 +110,7 @@ namespace Sandbox
                 // Number(10 / 3) is normalizing[0, 0.3) interval into[0, 1).
 
                 if (currentBid == 0)
-                    currentBid = 10 * (int)(50 * (10/3) * Math.Max(0, new Random().NextDouble() - 0.7));
+                    currentBid = 10 * (int)(50 * (10 / 3) * Math.Max(0, new Random().NextDouble() - 0.7));
 
                 bidSize = (int)Math.Max(currentBid, currentBid * (aggressiveness + new Random().NextDouble()));
             }
@@ -112,29 +127,63 @@ namespace Sandbox
             return bidSize;
         }
 
-        // The player decides to fold (i.e. surrender) his current hand, excluding him from the rest of the round.
+        /// <summary>
+        /// The player decides to fold (i.e. surrender) his current hand, excluding him from the rest of the round.
+        /// </summary>
         public void Fold()
         {
             isPlaying = false;
             Console.WriteLine($"{Name} folds.");
         }
 
-        // The player comes back to the table (another round began).
+        /// <summary>
+        /// Choose to replace from one to four cards.
+        /// </summary>
+        /// <returns>Returns the number of cards to replace.</returns>
+        public int ReplaceCards()
+        {
+            if (!isPlaying)
+                return 0;
+            if (isUser)
+            {
+                Console.WriteLine("Which cards would you like to replace?");
+                Console.WriteLine("0 for none. 1, 2, 3, 4, 5 for each card.");
+                var cardsToReplace = Console.ReadLine().Split(' ').ToArray();
+                Console.WriteLine(cardsToReplace);
+                // TODO
+                return 0;
+            }
+            else
+                return new Random().Next() % 5;
+        }
+
+        /// <summary>
+        /// The player is included in the new round.
+        /// </summary>
         public void Play()
         {
             isPlaying = true;
         }
 
-        // Return the information whether a player is still playing (didn't fold nor did he go bankrupt).
-        public bool IsPlaying() => isPlaying;
+        /// <summary>
+        /// Return the information whether a player is still playing (didn't fold nor did they go bankrupt).
+        /// </summary>
+        public bool IsPlaying()
+        {
+            return isPlaying;
+        }
 
-        // Return the cards in the player's hand.
+        /// <summary>
+        /// Return the cards in the player's hand.
+        /// </summary>
         public List<Card> GetHand()
         {
             return hand;
         }
 
-        // Bubble sort cards in hand by value.
+        /// <summary>
+        /// Sort cards in a hand by their value.
+        /// </summary>
         public void SortHand()
         {
             for (int i = 0; i < hand.Count - 1; i++)
@@ -147,7 +196,17 @@ namespace Sandbox
                     }
         }
 
-        // Search cards in hand for ranks, like pair, three of a kind or flush.
+        /// <summary>
+        /// Put all cards from hand away.
+        /// </summary>
+        public void DiscardHand()
+        {
+            hand.Clear();
+        }
+
+        /// <summary>
+        /// Search cards in hand for ranks, like pair, three of a kind or flush.
+        /// </summary>
         public void UpdateRanks()
         {
             ranks.Clear();
@@ -224,13 +283,17 @@ namespace Sandbox
                 ranks.Add(Rank.HighCard, hand.GetRange(hand.Count - 1, 1));
         }
 
-        // Returns ranks present in player's hand.
+        /// <summary>
+        /// Returns ranks present in player's hand.
+        /// </summary>
         public Dictionary<Rank, List<Card>> GetRanks()
         {
             return ranks;
         }
 
-        // Displays all cards in the player's hand, as card symbols.
+        /// <summary>
+        /// Display all cards in the player's hand, as card symbols.
+        /// </summary>
         public void DisplayHand()
         {
             if (isPlaying)
@@ -242,7 +305,9 @@ namespace Sandbox
             Console.WriteLine();
         }
 
-        // Lists all ranks in the player's hand, with cards that form them.
+        /// <summary>
+        /// List all ranks in the player's hand, with cards that form them.
+        /// </summary>
         public void DisplayRanks()
         {
             foreach (var rank in ranks)
