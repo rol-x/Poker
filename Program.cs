@@ -13,7 +13,7 @@ namespace Sandbox
             Console.OutputEncoding = Encoding.UTF8;
             var game = new PokerGame();
             game.SitPlayers();
-            game.Play();
+            game.PlayRound();
         }
     }
 }

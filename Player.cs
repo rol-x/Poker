@@ -5,7 +5,7 @@ using System.Linq;
 namespace Sandbox
 {
     /// <summary>
-    /// Standard poker ranking, matching cards from hand together into groups like pair, full house or straight flush.
+    /// Standard poker ranking, which matches cards from hand into groups like pair, full house or straight flush.
     /// </summary>
     enum Rank
     {
@@ -25,13 +25,14 @@ namespace Sandbox
     /// </summary>
     class Player
     {
-        private Dictionary<Rank, List<Card>> ranks;
+        private Dictionary<Rank, List<Card>> rank;
         private List<Card> hand;
         private int money;
         private bool isUser;
         private bool isPlaying;
-        public double Aggressiveness { get; }
+        private bool areCardsHidden;
 
+        public double Aggressiveness { get; }
         public string Name { get; }
 
         /// <summary>
@@ -43,8 +44,9 @@ namespace Sandbox
             money = 10000;
             hand = new List<Card>();
             Aggressiveness = 0.5 + 0.4 * (new Random().NextDouble() - 0.5);
-            ranks = new Dictionary<Rank, List<Card>>();
+            rank = new Dictionary<Rank, List<Card>>();
             isUser = false;
+            areCardsHidden = true;
         }
 
         /// <summary>
@@ -201,10 +203,18 @@ namespace Sandbox
             }
             else
             {
-                var uselessCards = hand.Where(card => ranks.Where(pair => pair.Value.Contains(card)).Count() == 0);
+                var uselessCards = hand.Where(card => rank.Where(pair => pair.Value.Contains(card)).Count() == 0);
                 hand.RemoveAll(card => uselessCards.Contains(card));
                 return 5 - hand.Count;
             }
+        }
+
+        /// <summary>
+        /// Add to player's money.
+        /// </summary>
+        public void Win(int moneyPrize)
+        {
+            money += moneyPrize;
         }
 
         /// <summary>
@@ -229,6 +239,22 @@ namespace Sandbox
         public List<Card> GetHand()
         {
             return hand;
+        }
+
+        /// <summary>
+        /// Show player's cards to other players.
+        /// </summary>
+        public void ShowCards()
+        {
+            areCardsHidden = false;
+        }
+
+        /// <summary>
+        /// Conceal the player's cards to other players.
+        /// </summary>
+        public void HideCards()
+        {
+            areCardsHidden = true;
         }
 
         /// <summary>
@@ -259,7 +285,7 @@ namespace Sandbox
         /// </summary>
         public void UpdateRanks()
         {
-            ranks.Clear();
+            rank.Clear();
             SortHand();
             var colorDictionary = new Dictionary<Color, int>();
             var valueDictionary = new Dictionary<Value, int>();
@@ -280,7 +306,7 @@ namespace Sandbox
             foreach (var colorCount in colorDictionary)
             {
                 if (colorCount.Value == 5)
-                    ranks.Add(Rank.Flush, hand);
+                    rank.Add(Rank.Flush, hand);
             }
             // Four of a kind, three of a kind, one pair and two pairs are self-explanatory.
             foreach (KeyValuePair<Value, int> valueCount in valueDictionary)
@@ -288,31 +314,31 @@ namespace Sandbox
                 switch (valueCount.Value)
                 {
                     case 4:
-                        ranks.Add(Rank.FourOfAKind, hand.Where(card => card.Value == valueCount.Key).ToList<Card>());
+                        rank.Add(Rank.FourOfAKind, hand.Where(card => card.Value == valueCount.Key).ToList<Card>());
                         break;
                     case 3:
-                        ranks.Add(Rank.ThreeOfAKind, hand.Where(card => card.Value == valueCount.Key).ToList<Card>());
+                        rank.Add(Rank.ThreeOfAKind, hand.Where(card => card.Value == valueCount.Key).ToList<Card>());
                         break;
                     case 2:
-                        if (!ranks.ContainsKey(Rank.OnePair))
-                            ranks.Add(Rank.OnePair, hand.Where(card => card.Value == valueCount.Key).ToList<Card>());
+                        if (!rank.ContainsKey(Rank.OnePair))
+                            rank.Add(Rank.OnePair, hand.Where(card => card.Value == valueCount.Key).ToList<Card>());
                         else
                         {
                             // We marge two OnePair ranks into TwoPairs and remove the earlier written OnePair.
-                            List<Card> twoPairs = ranks[Rank.OnePair];
+                            List<Card> twoPairs = rank[Rank.OnePair];
                             twoPairs.AddRange(hand.Where(card => card.Value == valueCount.Key).ToList<Card>());
-                            ranks.Add(Rank.TwoPairs, twoPairs);
-                            ranks.Remove(Rank.OnePair);
+                            rank.Add(Rank.TwoPairs, twoPairs);
+                            rank.Remove(Rank.OnePair);
                         }
                         break;
                 }
             }
             // Full house is one pair and three of a kind.
-            if (ranks.ContainsKey(Rank.OnePair) && ranks.ContainsKey(Rank.ThreeOfAKind))
+            if (rank.ContainsKey(Rank.OnePair) && rank.ContainsKey(Rank.ThreeOfAKind))
             {
-                ranks.Add(Rank.FullHouse, hand);
-                ranks.Remove(Rank.ThreeOfAKind);
-                ranks.Remove(Rank.OnePair);
+                rank.Add(Rank.FullHouse, hand);
+                rank.Remove(Rank.ThreeOfAKind);
+                rank.Remove(Rank.OnePair);
             }
             // Straight is a chain of 5 succesive cards (e.g. Four, Five, Six, Seven, Eight)
             bool areCardsConsecutive = true;
@@ -320,25 +346,25 @@ namespace Sandbox
                 if (hand[i].Value + 1 != hand[i + 1].Value)
                     areCardsConsecutive = false;
             if (areCardsConsecutive && hand.Count == 5)
-                ranks.Add(Rank.Straight, hand);
+                rank.Add(Rank.Straight, hand);
             // Straight flush is a straight and a flush.
-            if (ranks.ContainsKey(Rank.Straight) && ranks.ContainsKey(Rank.Flush))
+            if (rank.ContainsKey(Rank.Straight) && rank.ContainsKey(Rank.Flush))
             {
-                ranks.Add(Rank.StraightFlush, hand);
-                ranks.Remove(Rank.Straight);
-                ranks.Remove(Rank.Flush);
+                rank.Add(Rank.StraightFlush, hand);
+                rank.Remove(Rank.Straight);
+                rank.Remove(Rank.Flush);
             }
             // High card is the card of highest value in case of no other ranks.
-            if (ranks.Count == 0 && hand.Count != 0)
-                ranks.Add(Rank.HighCard, hand.GetRange(hand.Count - 1, 1));
+            if (rank.Count == 0 && hand.Count != 0)
+                rank.Add(Rank.HighCard, hand.GetRange(hand.Count - 1, 1));
         }
 
         /// <summary>
-        /// Returns ranks present in player's hand.
+        /// Returns the rank present in player's hand.
         /// </summary>
-        public Dictionary<Rank, List<Card>> GetRanks()
+        public Dictionary<Rank, List<Card>> GetRank()
         {
-            return ranks;
+            return rank;
         }
 
         /// <summary>
@@ -363,13 +389,13 @@ namespace Sandbox
         /// </summary>
         public void DisplayRanks()
         {
-            foreach (var rank in ranks)
+            foreach (var rank in rank)
             {
                 Console.Write($"{rank.Key}: ");
                 foreach (var card in rank.Value)
                     Console.Write(card.CardSymbol() + " ");
             }
-            if (ranks.Count != 0)
+            if (rank.Count != 0)
                 Console.WriteLine();
             Console.WriteLine();
         }
