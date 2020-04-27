@@ -114,7 +114,7 @@ namespace Sandbox
                 if (currentBid == 0)
                     currentBid = 10 * (int)(50 * (10 / 3) * Math.Max(0, new Random().NextDouble() - 0.7));
 
-                bidSize = 10*(int)(Math.Max(currentBid, currentBid * (Aggressiveness + new Random().NextDouble())) / 10);
+                bidSize = 10 * (int)(Math.Max(currentBid, currentBid * (Aggressiveness + new Random().NextDouble())) / 10);
             }
 
             money -= bidSize;
@@ -144,19 +144,67 @@ namespace Sandbox
         /// <returns>Returns the number of cards to replace.</returns>
         public int ReplaceCards()
         {
+            Console.Clear();
             if (!isPlaying)
                 return 0;
             if (isUser)
             {
-                Console.WriteLine("Which cards would you like to replace?");
-                Console.WriteLine("0 for none. 1, 2, 3, 4, 5 for each card.");
-                var cardsToReplace = Console.ReadLine().Split(' ').ToArray();
-                Console.WriteLine(cardsToReplace);
-                // TODO
-                return 0;
+                int marker = 0;
+                var selections = new Dictionary<int, bool>();
+                for (int i = 0; i < hand.Count + 1; i++)
+                    selections.Add(i, false);
+                while (selections[hand.Count] == false)
+                {
+                    Console.Clear();
+                    Console.WriteLine("Which cards would you like to replace? (Select up to 4 cards)");
+                    Console.WriteLine();
+                    for (int i = 0; i < hand.Count; i++)
+                    {
+                        if (selections[i])
+                            Console.Write("→");
+                        Console.Write($"\t{hand[i].CardSymbol()} ");
+                        if (marker == i)
+                            Console.Write("<");
+                        Console.WriteLine();
+                    }
+                    if (selections.Where(pair => pair.Value == true).Count() == 0)
+                        Console.Write("\tNone ");
+                    else
+                        Console.Write("\tReplace ");
+                    if (marker == hand.Count)
+                        Console.Write("<");
+                    Console.WriteLine();
+
+                    switch (Console.ReadKey().Key)
+                    {
+                        case ConsoleKey.UpArrow:
+                            if (marker > 0)
+                                marker--;
+                            break;
+                        case ConsoleKey.DownArrow:
+                            if (marker < hand.Count)
+                                marker++;
+                            break;
+                        case ConsoleKey.Enter:
+                            if (selections.Where(pair => pair.Value == true).Count() < 5)
+                                selections[marker] = !selections[marker];
+                            break;
+                    }
+                }
+                do
+                {
+                    var key = selections.Where(pair => pair.Value == true && pair.Key != 5).First().Key;
+                    hand.RemoveAt(key);
+                    selections.Remove(key);
+                } while (selections.Where(pair => pair.Value == true).Count() > 1);
+                return 5 - hand.Count;
             }
             else
-                return new Random().Next() % 5;
+            {
+                var uselessCards = hand.Where(card => ranks.Where(pair => pair.Value.Contains(card)).Count() == 0);
+                hand.RemoveAll(card => uselessCards.Contains(card));
+                return 5 - hand.Count;
+            }
         }
 
         /// <summary>

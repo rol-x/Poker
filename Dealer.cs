@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Sandbox
 {
@@ -34,8 +35,20 @@ namespace Sandbox
         /// <param name="count">Number of cards to deal.</param>
         public void DealReplacement(Player player, int count)
         {
+            if (player.IsUser())
+            {
+                if (count == 1)
+                    Console.Write("\nNew card: ");
+                else
+                    Console.Write("\nNew cards: ");
+            }
             for (int i = 0; i < count; i++)
-                player.DrawCard(deck.GetNextCard());
+            {
+                var newCard = deck.GetNextCard();
+                if (player.IsUser())
+                    Console.Write(newCard.CardSymbol() + " ");
+                player.DrawCard(newCard);
+            }
         }
 
         /// <summary>

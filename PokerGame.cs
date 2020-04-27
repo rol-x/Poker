@@ -47,22 +47,38 @@ namespace Sandbox
             {
                 Console.Clear();
                 displayTable();
+
                 foreach (var player in players)
+                {
                     if (player.IsPlaying())
                         makeMove(player);
+                }
+
                 checkEndOfRound();
 
                 if (isRoundOver && !usedReplacement)
-                    foreach (var player in players)
+                {
+                    Console.WriteLine("\nProceed to card replacement stage.");
+                    Console.ReadKey();
+                    foreach (var player in players.Where(player => player.IsPlaying()))
                     {
+                        Console.Clear();
                         int howManyToReplace = player.ReplaceCards();
                         dealer.DealReplacement(player, howManyToReplace);
                         usedReplacement = true;
+                        isRoundOver = false;
+                        displayTable();
+                        Console.WriteLine($"{player.Name} exchanged {howManyToReplace} cards.");
+                        Console.ReadKey();
                     }
-                if (!isRoundOver)
+                }
+                if (!isRoundOver && !usedReplacement)
+                {
+                    Console.WriteLine("Deal next card.");
+                    Console.ReadKey();
                     dealer.DealCard(players);
+                }
             }
-
             determineTheWinner();
         }
 
@@ -177,7 +193,7 @@ namespace Sandbox
                     currentBid = player.PlaceBid(currentBid, false);
                 else
                 {
-                   
+
                     int highCardValue = (int)player.GetRanks()[Rank.HighCard][0].Value + 1;
                     double foldProbability = Math.Pow(Math.Log(14 - highCardValue, 14), 10);
                     if (new Random().NextDouble() <= foldProbability / player.GetHand().Count)
@@ -195,9 +211,14 @@ namespace Sandbox
         /// </summary>
         private void checkEndOfRound()
         {
-            if (players.Where(player => player.IsPlaying() == true).Count() == 1)
+            // Only one player left at the table.
+            if (players.Where(player => player.IsPlaying()).Count() == 1)
+            {
                 isRoundOver = true;
-            if (players[0].GetHand().Count == 5 && usedReplacement == true)
+                usedReplacement = true;
+            }
+            // The number of players with 5 cards is equal to the number of players, who are still playing.
+            if (players.Where(player => player.GetHand().Count() == 5).Count() == players.Where(player => player.IsPlaying()).Count())
                 isRoundOver = true;
         }
 
