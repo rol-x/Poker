@@ -27,13 +27,19 @@ namespace Sandbox
     {
         private Dictionary<Rank, List<Card>> rank;
         private List<Card> hand;
-        private int money;
+        public int money;
         private bool isUser;
         private bool isPlaying;
         private bool areCardsHidden;
 
         public double Aggressiveness { get; }
         public string Name { get; }
+        public bool DidRaise { get; set; }
+        public int BetValue { get; set; }
+        public bool IsBankrupt
+        {
+            get { return money <= 0; }
+        }
 
         /// <summary>
         /// Constructor.
@@ -47,6 +53,8 @@ namespace Sandbox
             rank = new Dictionary<Rank, List<Card>>();
             isUser = false;
             areCardsHidden = true;
+            DidRaise = false;
+            BetValue = 0;
         }
 
         /// <summary>
@@ -74,61 +82,85 @@ namespace Sandbox
         }
 
         /// <summary>
-        /// Player chooses the amount of money they want to bet in current round. 
+        /// Player equates their contribution to the money pool with the current bid.
         /// </summary>
-        /// <returns>Returns the bid value chosen by player.</returns>
-        public int PlaceBid(int currentBid, bool doesCall)
+        /// <param name="currentBid"></param>
+        public void Call(int currentBid)
         {
-            int bidSize;
-            if (isUser)
-            {
-                if (doesCall)
-                    bidSize = currentBid;
-                else
-                {
-                    // First bet should be at least 100.
-                    int lowerBound = Math.Max(currentBid, 100);
-                    Console.WriteLine("How much money do you want to bet? ");
-                    do
-                    {
-                        bidSize = Int32.Parse(Console.ReadLine());
-                        if (bidSize > money)
-                            Console.WriteLine("You lack funds to bid so high!");
-                        if (bidSize < lowerBound)
-                            Console.WriteLine($"You have to bid at least ${lowerBound}.");
-                        if (bidSize % 10 != 0)
-                            Console.WriteLine("The minimal bidding step is $10.");
-                    } while (bidSize > money || bidSize < lowerBound || bidSize % 10 != 0);
-                }
-            }
-            else
-            {
-                // Non-playable character bidding logic.
-                // First bet probability: fixed 30%.
-                // First bet size: any integer from 0 to 50, times 10.
-                // Minimal bid: current bid
-                // Maximal bid: current bid * (aggressiveness + 1)
-                // Minimal bid probability: 1 - aggressiveness
-                // Aggressiveness: 0 - always calls, 0.5 - calls and raises equally, 1 - only raises. Linear.
-                //
-                // Number(10 / 3) is normalizing[0, 0.3) interval into[0, 1).
-
-                if (currentBid == 0)
-                    currentBid = 10 * (int)(50 * (10 / 3) * Math.Max(0, new Random().NextDouble() - 0.7));
-
-                bidSize = 10 * (int)(Math.Max(currentBid, currentBid * (Aggressiveness + new Random().NextDouble())) / 10);
-            }
-
-            money -= bidSize;
-
-            if (doesCall)
-                Console.WriteLine($"{Name} calls with ${currentBid}.");
-            else if (bidSize == 0)
+            int myBidRaise = currentBid - BetValue;
+            money -= myBidRaise;
+            BetValue += myBidRaise;
+            if (currentBid == 0)
                 Console.WriteLine($"{Name} checks.");
             else
-                Console.WriteLine($"{Name} bets ${bidSize}.");
+                Console.WriteLine($"{Name} calls with ${myBidRaise}.");
+        }
 
-            return bidSize;
+        /// <summary>
+        /// Player chooses the amount of money they want to bet in the current turn. 
+        /// </summary>
+        /// <returns>Returns the amount by which the players raises the bid.</returns>
+        public int Raise(int currentBid)
+        {
+            // What is the value of the new bid.
+            int newBid;
+
+            // The user takes turn.
+            if (isUser)
+            {
+                // First bet should be at least $100. Next bid should be a least $10 more.
+                int lowerBound = Math.Max(currentBid - (currentBid % 10) + 10, 100);
+                Console.WriteLine("How much do you want to bet?");
+                do
+                {
+                    var parseSuccess = Int32.TryParse(Console.ReadLine(), out newBid);
+                    if (newBid > money)
+                        Console.WriteLine("You lack funds to bid so high!");
+                    else if (newBid < lowerBound)
+                        Console.WriteLine($"You have to bid at least ${lowerBound}.");
+                    else if (newBid % 10 != 0)
+                        Console.WriteLine("The lowest denomination is $10.");
+                    if (!parseSuccess || newBid > money || newBid < lowerBound || newBid % 10 != 0)
+                    {
+                        Console.ReadKey(true);
+                        ConsoleEditor.ClearLastLines(2);
+                    }
+                } while (newBid > money || newBid < lowerBound || newBid % 10 != 0);
+                ConsoleEditor.ClearLastLines(2);
+            }
+
+            // Non-user player takes turn.
+            else
+            {
+                double playerRankCoefficient = ((double)rank.First().Key + 1)  / 20.0;
+                double highCardValueCoefficient = ((double)hand.Last().Value + 1) / 100.0;
+
+                newBid = Math.Min(currentBid + 300, (int)Math.Ceiling(currentBid *
+                    (1 + playerRankCoefficient + highCardValueCoefficient + (0.1 - new Random().NextDouble() * 0.2))));
+
+                //0.15 + playerRankCoefficient + highCardValueCoefficient + (0.1 - new Random().NextDouble() * 0.2);
+
+                // If non-user is the first bidder, take 100 as a base.
+                if (currentBid == 0)
+                    newBid = (int)(100 *
+                        (1 + playerRankCoefficient + highCardValueCoefficient + (0.1 - new Random().NextDouble() * 0.3)));
+
+                // Trim the last digit.
+                newBid -= newBid % 10;
+            }
+
+            // How much does the player increase their bid.
+            int myBidRaise = newBid - BetValue;
+
+            // Take the chips into hand to throw them nonchalantly on the table.
+            money -= myBidRaise;
+            BetValue += myBidRaise;
+
+            Console.WriteLine($"{Name} bets ${newBid}.");
+            DidRaise = true;
+
+            // Return the difference this player made to the current bid.
+            return newBid - currentBid;
         }
 
         /// <summary>
@@ -195,7 +227,7 @@ namespace Sandbox
                 }
                 do
                 {
-                    var key = selections.Where(pair => pair.Value == true && pair.Key != 5).First().Key;
+                    var key = selections.Where(pair => pair.Value == true && pair.Key != 5).Last().Key;
                     hand.RemoveAt(key);
                     selections.Remove(key);
                 } while (selections.Where(pair => pair.Value == true).Count() > 1);
@@ -215,6 +247,23 @@ namespace Sandbox
         public void Win(int moneyPrize)
         {
             money += moneyPrize;
+        }
+
+        /// <summary>
+        /// Return the amount of money player possesses.
+        /// </summary>
+        public int GetMoney()
+        {
+            return money;
+        }
+
+        /// <summary>
+        /// The player pays the entry fee in order to play.
+        /// </summary>
+        public int PayEntryFee(int fee)
+        {
+            money -= fee;
+            return fee;
         }
 
         /// <summary>
@@ -397,7 +446,6 @@ namespace Sandbox
             }
             if (rank.Count != 0)
                 Console.WriteLine();
-            Console.WriteLine();
         }
     }
 }

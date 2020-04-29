@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Card.cs" />
+    <Compile Include="ConsoleEditor.cs" />
     <Compile Include="Dealer.cs" />
     <Compile Include="Deck.cs" />
     <Compile Include="Player.cs" />
