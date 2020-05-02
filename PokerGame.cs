@@ -47,9 +47,9 @@ namespace Sandbox
             {
                 dealer.GetNewDeck();
                 playRound();
-                foreach (var player in players)
-                    if (player.GetMoney() <= 0)
-                        players.Remove(player);
+                for (int i = 0; i < players.Count; i++)
+                    if (players[i].GetMoney() <= 0)
+                        players.Remove(players[i]);
             }
             finishTheGame();
         }
@@ -92,10 +92,11 @@ namespace Sandbox
 
                         // Update player's contribution to the money pool.
                         playersBids[players[playerIndex]] = players[playerIndex].BetValue;
-                        //Console.WriteLine($"{players[playerIndex].Name }: {playersBids[players[playerIndex]]}");
 
-                        // Players who recently folded, need not to be taken into account during bidding anymore.
+                        // Players who recently folded or went bankrupt, need not to be taken into account during bidding anymore.
                         if (!players[playerIndex].IsPlaying() && playersBids.ContainsKey(players[playerIndex]))
+                            playersBids.Remove(players[playerIndex]);
+                        if (players[playerIndex].IsBankrupt && playersBids.ContainsKey(players[playerIndex]))
                             playersBids.Remove(players[playerIndex]);
 
                         updateBidDisplay();
@@ -202,62 +203,76 @@ namespace Sandbox
         /// </summary>
         private void makeMoveUser(Player player)
         {
-            int bidRaise = 0;
-            bool repeat = true;
-            // No one raised the bid.
-            if (currentBid == 0)
+            // The player is going bankrupt.
+            if (player.GetMoney() <= currentBid)
             {
-                while (repeat)
-                {
-                    Console.WriteLine("[B] Bet\n[C] Check\n[F] Fold\n");
-                    var key = Console.ReadKey(true).Key;
-                    ConsoleEditor.ClearLastLines(4);
-                    switch (key)
-                    {
-                        // A bet is a raise, when the bid is 0.
-                        case ConsoleKey.B:
-                            bidRaise = player.Raise(currentBid);
-                            currentBid += bidRaise;
-                            moneyPool += currentBid;
-                            repeat = false;
-                            break;
-                        // A check is a call, when the bid is 0.
-                        case ConsoleKey.C:
-                            player.Call(currentBid);
-                            repeat = false;
-                            break;
-                        case ConsoleKey.F:
-                            player.Fold();
-                            repeat = false;
-                            break;
-                    }
-                }
+                Console.WriteLine($"Bet ${player.GetMoney()}.");
+                Console.ReadKey(true);
+                ConsoleEditor.ClearLastLines(1);
+                Console.WriteLine($"{player.Name} bets ${player.GetMoney()}.");
+                moneyPool += player.PayEntryFee(player.GetMoney());
             }
-            // The bid is already raised.
+
+            // The player is making a normal move.
             else
             {
-                while (repeat)
+                int bidRaise = 0;
+                bool repeat = true;
+                // No one raised the bid.
+                if (currentBid == 0)
                 {
-                    Console.WriteLine("[C] Call\n[R] Raise\n[F] Fold\n");
-                    var key = Console.ReadKey(true).Key;
-                    ConsoleEditor.ClearLastLines(4);
-                    switch (key)
+                    while (repeat)
                     {
-                        case ConsoleKey.C:
-                            player.Call(currentBid);
-                            moneyPool += currentBid;
-                            repeat = false;
-                            break;
-                        case ConsoleKey.R:
-                            bidRaise = player.Raise(currentBid);
-                            currentBid += bidRaise;
-                            moneyPool += currentBid;
-                            repeat = false;
-                            break;
-                        case ConsoleKey.F:
-                            player.Fold();
-                            repeat = false;
-                            break;
+                        Console.WriteLine("[B] Bet\n[C] Check\n[F] Fold\n");
+                        var key = Console.ReadKey(true).Key;
+                        ConsoleEditor.ClearLastLines(4);
+                        switch (key)
+                        {
+                            // A bet is a raise, when the bid is 0.
+                            case ConsoleKey.B:
+                                bidRaise = player.Raise(currentBid);
+                                currentBid += bidRaise;
+                                moneyPool += currentBid;
+                                repeat = false;
+                                break;
+                            // A check is a call, when the bid is 0.
+                            case ConsoleKey.C:
+                                player.Call(currentBid);
+                                repeat = false;
+                                break;
+                            case ConsoleKey.F:
+                                player.Fold();
+                                repeat = false;
+                                break;
+                        }
+                    }
+                }
+                // The bid is already raised.
+                else
+                {
+                    while (repeat)
+                    {
+                        Console.WriteLine("[C] Call\n[R] Raise\n[F] Fold\n");
+                        var key = Console.ReadKey(true).Key;
+                        ConsoleEditor.ClearLastLines(4);
+                        switch (key)
+                        {
+                            case ConsoleKey.C:
+                                player.Call(currentBid);
+                                moneyPool += currentBid;
+                                repeat = false;
+                                break;
+                            case ConsoleKey.R:
+                                bidRaise = player.Raise(currentBid);
+                                currentBid += bidRaise;
+                                moneyPool += currentBid;
+                                repeat = false;
+                                break;
+                            case ConsoleKey.F:
+                                player.Fold();
+                                repeat = false;
+                                break;
+                        }
                     }
                 }
             }
@@ -269,16 +284,27 @@ namespace Sandbox
         /// <returns></returns>
         private void makeMoveComputer(Player player)
         {
-            int bidRaise = 0;
-            if (new Random().NextDouble() <= foldProbability(player, currentBid))
-                player.Fold();
-            else if (new Random().NextDouble() < raiseProbability(player, currentBid))
-                bidRaise = player.Raise(currentBid);
-            else
-                player.Call(currentBid);
+            // The player is going bankrupt.
+            if (player.GetMoney() <= currentBid)
+            {
+                Console.WriteLine($"{player.Name} bets ${player.GetMoney()}.");
+                moneyPool += player.PayEntryFee(player.GetMoney());
+            }
 
-            currentBid += bidRaise;
-            moneyPool += currentBid;
+            // The player is making a normal move.
+            else
+            {
+                int bidRaise = 0;
+                if (new Random().NextDouble() <= foldProbability(player, currentBid))
+                    player.Fold();
+                else if (new Random().NextDouble() < raiseProbability(player, currentBid))
+                    bidRaise = player.Raise(currentBid);
+                else
+                    player.Call(currentBid);
+
+                currentBid += bidRaise;
+                moneyPool += currentBid;
+            }
         }
 
         /// <summary>
@@ -322,7 +348,7 @@ namespace Sandbox
         {
             Console.WriteLine("\nProceed to card replacement stage.");
             Console.ReadKey();
-            foreach (var player in players.Where(player => player.IsPlaying()))
+            foreach (var player in players.Where(player => player.IsPlaying() || player.IsBankrupt))
             {
                 Console.Clear();
                 int howManyToReplace = player.ReplaceCards();
@@ -353,7 +379,7 @@ namespace Sandbox
                 // Players with 2 or 3 as a first card are most likely to fold.
                 // The probability of folding decreases with the amount of cards.
                 int highCardValue = (int)player.GetRank()[Rank.HighCard][0].Value + 1;
-                probability = Math.Pow(Math.Log(14 - highCardValue, 14), 12 + 10 * player.Aggressiveness);
+                probability = Math.Pow(Math.Log(14 - highCardValue, 14), 15 + 10 * player.Aggressiveness);
             }
 
             return probability;
@@ -399,14 +425,17 @@ namespace Sandbox
         /// </summary>
         private void checkEndOfRound()
         {
+            // Players who didn't fold.
+            var eligiblePlayers = players.Where(player => player.IsPlaying() || player.IsBankrupt);
+
             // Only one player left at the table.
-            if (players.Where(player => player.IsPlaying()).Count() == 1)
+            if (eligiblePlayers.Count() == 1)
             {
                 isRoundOver = true;
                 usedReplacement = true;
             }
-            // The number of players with 5 cards is equal to the number of players, who are still playing.
-            if (players.Where(player => player.GetHand().Count() == 5).Count() == players.Where(player => player.IsPlaying()).Count())
+            // All playing players have 5 cards
+            if (eligiblePlayers.Where(player => player.GetHand().Count() == 5).Count() == eligiblePlayers.Count())
                 isRoundOver = true;
         }
 
@@ -435,22 +464,25 @@ namespace Sandbox
 
             #endregion
 
+            // Players eligible for winning.
+            var eligiblePlayers = players.Where(player => player.IsPlaying() || player.IsBankrupt).ToList();
+
             // If all other players folded, the remaining player is the winner.
-            if (players.Where(player => player.IsPlaying()).Count() == 1)
-                return players.Where(player => player.IsPlaying()).First();
+            if (eligiblePlayers.Count() == 1)
+                return eligiblePlayers.First();
 
             // Display all players' hands.
-            foreach (var player in players)
+            foreach (var player in eligiblePlayers)
                 player.ShowCards();
 
             // Find the best rank among players.
-            var bestRank = players.First().GetRank().First();
-            for (int i = 1; i < players.Count; i++)
-                if (players[i].GetRank().First().Key > bestRank.Key)
-                    bestRank = players[i].GetRank().First();
+            var bestRank = eligiblePlayers.First().GetRank().First();
+            for (int i = 1; i < eligiblePlayers.Count; i++)
+                if (eligiblePlayers[i].GetRank().First().Key > bestRank.Key)
+                    bestRank = eligiblePlayers[i].GetRank().First();
 
             // Group players with the determined best rank.
-            var bestRankPlayers = players.Where(player => player.GetRank().ContainsKey(bestRank.Key));
+            var bestRankPlayers = eligiblePlayers.Where(player => player.GetRank().ContainsKey(bestRank.Key));
 
             // The only player with the best rank is the winner.
             if (bestRankPlayers.Count() == 1)

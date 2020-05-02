@@ -38,7 +38,16 @@ namespace Sandbox
         public int BetValue { get; set; }
         public bool IsBankrupt
         {
-            get { return money <= 0; }
+            get
+            {
+                if (money > 0)
+                    return false;
+                else
+                {
+                    isPlaying = false;
+                    return true;
+                }
+            }
         }
 
         /// <summary>
@@ -132,7 +141,7 @@ namespace Sandbox
             // Non-user player takes turn.
             else
             {
-                double playerRankCoefficient = ((double)rank.First().Key + 1)  / 20.0;
+                double playerRankCoefficient = ((double)rank.First().Key + 1) / 20.0;
                 double highCardValueCoefficient = ((double)hand.Last().Value + 1) / 100.0;
 
                 newBid = Math.Min(currentBid + 300, (int)Math.Ceiling(currentBid *
@@ -179,7 +188,7 @@ namespace Sandbox
         public int ReplaceCards()
         {
             Console.Clear();
-            if (!isPlaying)
+            if (!isPlaying && !IsBankrupt)
                 return 0;
             if (isUser)
             {
@@ -423,6 +432,8 @@ namespace Sandbox
         {
             if (isPlaying)
                 Console.WriteLine($"{Name}\t\t${money}");
+            else if (IsBankrupt)
+                Console.WriteLine($"{Name} (bankrupt)\t${money}");
             else
                 Console.WriteLine($"{Name} (fold)\t${money}");
             if (hand.Count == 0)

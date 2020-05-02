@@ -26,6 +26,8 @@ namespace Sandbox
             foreach (var player in players)
                 if (player.IsPlaying())
                     player.DrawCard(deck.GetNextCard());
+                else if (player.IsBankrupt)
+                    player.DrawCard(deck.GetNextCard());
         }
 
         /// <summary>
