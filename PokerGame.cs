@@ -18,7 +18,8 @@ namespace Sandbox
         private int moneyPool;
         private int currentBid;
         private int turnCount;
-        private int entryFee =  50;
+        private int entryFee = 50;
+        private bool ghostMode = false;
 
         /// <summary> 
         /// Constructor.
@@ -51,6 +52,8 @@ namespace Sandbox
                     if (players[i].GetMoney() <= 0)
                         players.Remove(players[i]);
                 entryFee += 50;
+                if (userLost() && !ghostMode)
+                    chooseAfterLife();
             }
             finishTheGame();
         }
@@ -136,7 +139,7 @@ namespace Sandbox
             {
                 player.DiscardHand();
                 player.Play();
-                if (!player.IsUser())
+                if (!player.IsUser() && !ghostMode)
                     player.HideCards();
             }
         }
@@ -612,6 +615,50 @@ namespace Sandbox
         }
 
         /// <summary>
+        /// Returns whether the user lost all money and is playing no more.
+        /// </summary>
+        private bool userLost()
+        {
+            foreach (var player in players)
+                if (player.IsUser())
+                    return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Let the user who lost choose a form of continuing the gameplay.
+        /// </summary>
+        private void chooseAfterLife()
+        {
+            Console.Clear();
+            Console.WriteLine("POKER HEAVEN\n");
+            Console.WriteLine("It seems like you lost all your money. What would you wish to do?");
+            Console.WriteLine("[R] Reincarnate into one of the players");
+            Console.WriteLine("[G] Become a ghostly spectator (spooky)");
+            Console.WriteLine("[V] Vanish straight into non-existance");
+
+            ConsoleKeyInfo choice;
+            do
+            {
+                choice = Console.ReadKey(true);
+                switch (choice.Key)
+                {
+                    case ConsoleKey.R:
+                        int playerNumber = new Random().Next() % players.Count;
+                        players[playerNumber].SetUser();
+                        players[playerNumber].ShowCards();
+                        break;
+                    case ConsoleKey.G:
+                        ghostMode = true;
+                        break;
+                    case ConsoleKey.V:
+                        Environment.Exit(0);
+                        break;
+                }
+            } while (choice.Key != ConsoleKey.R && choice.Key != ConsoleKey.G && choice.Key != ConsoleKey.V);
+        }
+
+        /// <summary>
         /// Display the winner and hand them the money from given round.
         /// </summary>
         private void finishTheRound()
@@ -628,7 +675,7 @@ namespace Sandbox
         private void finishTheGame()
         {
             Console.Clear();
-            Console.WriteLine($"{players.First()} is the winner! Congratulations!");
+            Console.WriteLine($"{players.First().Name} is the winner! Congratulations!");
             Console.ReadKey(true);
         }
     }
