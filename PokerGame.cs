@@ -9,40 +9,34 @@ namespace Sandbox
     /// <summary>
     /// Responsible for poker rules and the flow of the game.
     /// </summary>
-    class PokerGame
+    static class PokerGame
     {
-        private List<Player> players;
-        private Dealer dealer;
-        private bool isRoundOver;
-        private bool usedReplacement;
-        private int moneyPool;
-        private int currentBid;
-        private int turnCount;
-        private int entryFee = 50;
-        private bool ghostMode = false;
+        static private List<Player> players;
+        static private Dealer dealer;
+        static private bool isRoundOver;
+        static private bool usedReplacement;
+        static private int moneyPool;
+        static private int currentBid;
+        static private int turnCount;
+        static private int entryFee = 50;
+        static private bool ghostMode = false;
 
-        /// <summary> 
-        /// Constructor.
+        /// <summary>
+        /// Initializes a new poker game for four players.
         /// </summary>
-        public PokerGame()
+        static public void StartNewGame()
         {
-            players = new List<Player>() { new Player("Edwin"), new Player("Marie"), new Player("Stella") };
             dealer = new Dealer();
-        }
-
-        /// <summary> 
-        /// Introduce the user and shuffle the order of players at the table.
-        /// </summary>
-        public void SitPlayers()
-        {
+            players = new List<Player>() { new Player("Edwin"), new Player("Marie"), new Player("Stella") };
             introduceThePlayer();
             shufflePlayersOrder();
+            playGame();
         }
-
+        
         /// <summary>
         /// Play poker rounds and remove bankrupt players, until one is victorious.
         /// </summary>
-        public void PlayGame()
+        static private void playGame()
         {
             while (players.Where(player => player.GetMoney() >= 0).Count() > 1)
             {
@@ -61,7 +55,7 @@ namespace Sandbox
         /// <summary> 
         /// Round control loop, dealing cards and taking bets.
         /// </summary>
-        private void playRound()
+        static private void playRound()
         {
             startNewRound();
             while (!isRoundOver)
@@ -128,7 +122,7 @@ namespace Sandbox
         /// <summary> 
         /// Reset game's and players' round-level stats.
         /// </summary>
-        private void startNewRound()
+        static private void startNewRound()
         {
             moneyPool = 0;
             turnCount = 0;
@@ -147,7 +141,7 @@ namespace Sandbox
         /// <summary>
         /// Get the player's name and place them at the table.
         /// </summary>
-        private void introduceThePlayer()
+        static private void introduceThePlayer()
         {
             Console.WriteLine("Welcome to the table! What is your name?");
             string playerName = Console.ReadLine().Trim(' ');
@@ -161,7 +155,7 @@ namespace Sandbox
         /// <summary> 
         /// Randomize player's order at the table.
         /// </summary>
-        private void shufflePlayersOrder()
+        static private void shufflePlayersOrder()
         {
             var playersShuffled = new List<Player>();
             while (players.Count > 0)
@@ -176,7 +170,7 @@ namespace Sandbox
         /// <summary>
         /// Display players' names, quantity of cards and money; current bid and money pool.
         /// </summary>
-        private void displayTable()
+        static private void displayTable()
         {
             Console.Clear();
             Console.WriteLine($"Money pool: ${moneyPool}\t\tCurrent bid: ${currentBid}\n");
@@ -192,7 +186,7 @@ namespace Sandbox
         /// <summary>
         /// Display all players' cards, ranks, money and money pool.
         /// </summary>
-        private void displayTableFinish()
+        static private void displayTableFinish()
         {
             unhidePlayersCards();
             Console.Clear();
@@ -209,7 +203,7 @@ namespace Sandbox
         /// <summary>
         /// Dynamically update first console line containing current bid size and money pool value.
         /// </summary>
-        private void updateBidDisplay()
+        static private void updateBidDisplay()
         {
             var cursorLeft = Console.CursorLeft;
             var cursorTop = Console.CursorTop;
@@ -224,7 +218,7 @@ namespace Sandbox
         /// <summary>
         /// Choose to raise the bid, call or fold.
         /// </summary>
-        private void makeMoveUser(Player player)
+        static private void makeMoveUser(Player player)
         {
             // The player is going bankrupt.
             if (player.GetMoney() <= currentBid)
@@ -305,7 +299,7 @@ namespace Sandbox
         /// Perform a raise, call or fold, based on non-user player's situation in game.
         /// </summary>
         /// <returns></returns>
-        private void makeMoveComputer(Player player)
+        static private void makeMoveComputer(Player player)
         {
             // The player is going bankrupt.
             if (player.GetMoney() <= currentBid)
@@ -333,7 +327,7 @@ namespace Sandbox
         /// <summary>
         /// Set all bids to zero.
         /// </summary>
-        private void resetTheBid()
+        static private void resetTheBid()
         {
             currentBid = 0;
             foreach (var player in players)
@@ -346,7 +340,7 @@ namespace Sandbox
         /// <summary>
         /// Each player still in game is dealt a card. Advances turn by one.
         /// </summary>
-        private void dealCard()
+        static private void dealCard()
         {
             if (turnCount == 0)
             {
@@ -367,7 +361,7 @@ namespace Sandbox
         /// <summary>
         /// Stage where players can replace up to four of their cards.
         /// </summary>
-        private void replacementStage()
+        static private void replacementStage()
         {
             Console.WriteLine("\nProceed to card replacement stage.");
             Console.ReadKey();
@@ -388,7 +382,7 @@ namespace Sandbox
         /// Compute the probability of folding for non-user players.
         /// </summary>
         /// <returns>Returns the probability of folding the hand.</returns>
-        private double foldProbability(Player player, int currentBid)
+        static private double foldProbability(Player player, int currentBid)
         {
             double probability;
             // Players with at least a pair of cards will rarely fold. Unless scared by the bid.
@@ -412,7 +406,7 @@ namespace Sandbox
         /// Compute the probability of raising for non-user players.
         /// </summary>
         /// <returns>Returns the probability of folding the hand.</returns>
-        private double raiseProbability(Player player, int currentBid)
+        static private double raiseProbability(Player player, int currentBid)
         {
             double probability;
             double highCardValueCoefficient = (double)player.GetRank().First().Value.Last().Value / 100;
@@ -438,7 +432,7 @@ namespace Sandbox
         /// <summary>
         /// Return if all the players bid the same amount.
         /// </summary>
-        private bool areBidsEqual(Dictionary<Player, int> bids)
+        static private bool areBidsEqual(Dictionary<Player, int> bids)
         {
             return bids.Where(pair => pair.Value != currentBid).Count() == 0 ? true : false;
         }
@@ -446,7 +440,7 @@ namespace Sandbox
         /// <summary>
         ///  Check whether the round should end (one player left or showdown).
         /// </summary>
-        private void checkEndOfRound()
+        static private void checkEndOfRound()
         {
             // Players who didn't fold.
             var eligiblePlayers = players.Where(player => player.IsPlaying() || player.IsBankrupt);
@@ -465,7 +459,7 @@ namespace Sandbox
         /// <summary>
         /// Perform a showdown between players' hands to determine the round winner.
         /// </summary>
-        private Player determineTheWinner()
+        static private Player determineTheWinner()
         {
             #region ComparisonCommentary
 
@@ -608,7 +602,7 @@ namespace Sandbox
         /// <summary>
         /// Make all players' cards visible.
         /// </summary>
-        private void unhidePlayersCards()
+        static private void unhidePlayersCards()
         {
             foreach (var player in players.Where(player => player.IsPlaying()))
                 player.ShowCards();
@@ -617,7 +611,7 @@ namespace Sandbox
         /// <summary>
         /// Returns whether the user lost all money and is playing no more.
         /// </summary>
-        private bool userLost()
+        static private bool userLost()
         {
             foreach (var player in players)
                 if (player.IsUser())
@@ -628,7 +622,7 @@ namespace Sandbox
         /// <summary>
         /// Let the user who lost choose a form of continuing the gameplay.
         /// </summary>
-        private void chooseAfterLife()
+        static private void chooseAfterLife()
         {
             Console.Clear();
             Console.WriteLine("POKER HEAVEN\n");
@@ -661,7 +655,7 @@ namespace Sandbox
         /// <summary>
         /// Display the winner and hand them the money from given round.
         /// </summary>
-        private void finishTheRound()
+        static private void finishTheRound()
         {
             var winner = determineTheWinner();
             Console.WriteLine($"{winner.Name} wins this round!");
@@ -672,7 +666,7 @@ namespace Sandbox
         /// <summary>
         /// Finish the game, when only one player is left with the money.
         /// </summary>
-        private void finishTheGame()
+        static private void finishTheGame()
         {
             Console.Clear();
             Console.WriteLine($"{players.First().Name} is the winner! Congratulations!");
