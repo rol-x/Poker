@@ -438,9 +438,12 @@ namespace Sandbox
                 Console.WriteLine($"{Name} (fold)\t${money}");
             if (hand.Count == 0)
                 Console.WriteLine("No cards drawn yet.");
-            else
+            else if (!areCardsHidden)
                 foreach (var card in hand)
                     Console.Write(card.CardSymbol() + " ");
+            else
+                foreach (var card in hand)
+                    Console.Write("◘ ");
             Console.WriteLine();
         }
 
@@ -449,14 +452,17 @@ namespace Sandbox
         /// </summary>
         public void DisplayRanks()
         {
-            foreach (var rank in rank)
+            if (IsPlaying())
             {
-                Console.Write($"{rank.Key}: ");
-                foreach (var card in rank.Value)
-                    Console.Write(card.CardSymbol() + " ");
+                foreach (var rank in rank)
+                {
+                    Console.Write($"{rank.Key}: ");
+                    foreach (var card in rank.Value)
+                        Console.Write(card.CardSymbol() + " ");
+                }
+                if (rank.Count != 0)
+                    Console.WriteLine();
             }
-            if (rank.Count != 0)
-                Console.WriteLine();
         }
     }
 }

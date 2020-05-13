@@ -18,7 +18,7 @@ namespace Sandbox
         private int moneyPool;
         private int currentBid;
         private int turnCount;
-        private int entryFee;
+        private int entryFee =  50;
 
         /// <summary> 
         /// Constructor.
@@ -50,6 +50,7 @@ namespace Sandbox
                 for (int i = 0; i < players.Count; i++)
                     if (players[i].GetMoney() <= 0)
                         players.Remove(players[i]);
+                entryFee += 50;
             }
             finishTheGame();
         }
@@ -65,6 +66,7 @@ namespace Sandbox
                 resetTheBid();
                 displayTable();
 
+                // -1 acts as an flag indicating the player didn't make any move yet.
                 var playersBids = new Dictionary<Player, int>();
                 foreach (var player in players.Where(player => player.IsPlaying()))
                     playersBids.Add(player, -1);
@@ -116,6 +118,7 @@ namespace Sandbox
                 if (!isRoundOver && !usedReplacement)
                     dealCard();
             }
+            displayTableFinish();
             finishTheRound();
         }
 
@@ -125,7 +128,6 @@ namespace Sandbox
         private void startNewRound()
         {
             moneyPool = 0;
-            entryFee = 50;
             turnCount = 0;
             usedReplacement = false;
             isRoundOver = false;
@@ -134,7 +136,8 @@ namespace Sandbox
             {
                 player.DiscardHand();
                 player.Play();
-                player.HideCards();
+                if (!player.IsUser())
+                    player.HideCards();
             }
         }
 
@@ -147,6 +150,7 @@ namespace Sandbox
             string playerName = Console.ReadLine().Trim(' ');
             var player = new Player(playerName);
             player.SetUser();
+            player.ShowCards();
             players.Add(player);
             Console.WriteLine();
         }
@@ -167,7 +171,7 @@ namespace Sandbox
         }
 
         /// <summary>
-        /// Display all players' hands, ranks and money; current bid and money pool.
+        /// Display players' names, quantity of cards and money; current bid and money pool.
         /// </summary>
         private void displayTable()
         {
@@ -177,8 +181,24 @@ namespace Sandbox
             {
                 player.UpdateRanks();
                 player.DisplayHand();
-                player.DisplayRanks();
                 Console.WriteLine($"Bet: ${player.BetValue}");
+                Console.WriteLine();
+            }
+        }
+
+        /// <summary>
+        /// Display all players' cards, ranks, money and money pool.
+        /// </summary>
+        private void displayTableFinish()
+        {
+            unhidePlayersCards();
+            Console.Clear();
+            Console.WriteLine($"Money pool: ${moneyPool}\n");
+            foreach (var player in players)
+            {
+                player.UpdateRanks();
+                player.DisplayHand();
+                player.DisplayRanks();
                 Console.WriteLine();
             }
         }
@@ -580,6 +600,15 @@ namespace Sandbox
                 }
             }
             return winner;
+        }
+
+        /// <summary>
+        /// Make all players' cards visible.
+        /// </summary>
+        private void unhidePlayersCards()
+        {
+            foreach (var player in players.Where(player => player.IsPlaying()))
+                player.ShowCards();
         }
 
         /// <summary>
