@@ -658,6 +658,7 @@ namespace Sandbox
         static private void finishTheRound()
         {
             var winner = determineTheWinner();
+            
             Console.WriteLine($"{winner.Name} wins this round!");
             winner.Win(moneyPool);
             Console.ReadKey();

@@ -158,9 +158,13 @@ namespace Sandbox
                 newBid -= newBid % 10;
             }
 
+            // Overbetting protection.
+            if (newBid > money + BetValue)
+                newBid = money + BetValue;
+
             // How much does the player increase their bid.
             int myBidRaise = newBid - BetValue;
-
+            
             // Take the chips into hand to throw them nonchalantly on the table.
             money -= myBidRaise;
             BetValue += myBidRaise;
@@ -210,10 +214,12 @@ namespace Sandbox
                             Console.Write("<");
                         Console.WriteLine();
                     }
+
                     if (selections.Where(pair => pair.Value == true).Count() == 0)
                         Console.Write("\tNone ");
                     else
                         Console.Write("\tReplace ");
+
                     if (marker == hand.Count)
                         Console.Write("<");
                     Console.WriteLine();

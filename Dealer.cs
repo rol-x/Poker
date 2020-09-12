@@ -44,6 +44,7 @@ namespace Sandbox
                 else
                     Console.Write("\nNew cards: ");
             }
+
             for (int i = 0; i < count; i++)
             {
                 var newCard = deck.GetNextCard();
@@ -51,6 +52,9 @@ namespace Sandbox
                     Console.Write(newCard.CardSymbol() + " ");
                 player.DrawCard(newCard);
             }
+
+            if (player.IsUser())
+                Console.ReadKey();
         }
 
         /// <summary>
